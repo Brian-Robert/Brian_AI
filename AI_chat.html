@@ -1,205 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My AI</title>
-<style>
-body {
-  margin: 0;
-  background: #0a0e14;
-  color: #d7e6ee;
-  font-family: monospace;
-  padding: 0 16px;
-  max-width: 720px;
-  margin-left: auto;
-  margin-right: auto;
-}
-h1 {
-  color: #2de2e6;
-  font-size: 1.3rem;
-  letter-spacing: 0.5px;
-  padding-top: 20px;
-  border-bottom: 1px solid #1c2a38;
-  padding-bottom: 14px;
-}
-.sub {
-  font-size: 0.8rem;
-  color: #5c7285;
-  margin-top: -10px;
-}
-.setupRow {
-  margin-bottom: 10px;
-}
-.setupRow label {
-  display: block;
-  font-size: 0.72rem;
-  color: #5c7285;
-  margin-bottom: 4px;
-}
-.setupRow input {
-  width: 100%;
-  background: #0f1620;
-  border: 1px solid #1c2a38;
-  color: #d7e6ee;
-  padding: 8px 10px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.85rem;
-  box-sizing: border-box;
-}
-#log {
-  padding: 16px 0;
-  min-height: 200px;
-}
-.msgUser {
-  padding: 10px 12px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  white-space: pre-wrap;
-  background: rgba(255, 46, 196, 0.12);
-  border: 1px solid rgba(255, 46, 196, 0.4);
-  margin-bottom: 10px;
-  margin-left: 15%;
-}
-.msgAi {
-  padding: 10px 12px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  white-space: pre-wrap;
-  background: rgba(45, 226, 230, 0.08);
-  border: 1px solid rgba(45, 226, 230, 0.35);
-  margin-bottom: 10px;
-  margin-right: 15%;
-}
-.msgErr {
-  padding: 10px 12px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  white-space: pre-wrap;
-  background: rgba(255, 80, 80, 0.1);
-  border: 1px solid rgba(255, 80, 80, 0.5);
-  color: #ffb3b3;
-  margin-bottom: 10px;
-}
-.tag {
-  display: block;
-  font-size: 0.65rem;
-  color: #5c7285;
-  margin-bottom: 4px;
-}
-#promptBox {
-  width: 100%;
-  background: #0f1620;
-  border: 1px solid #1c2a38;
-  color: #d7e6ee;
-  padding: 10px 12px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.9rem;
-  height: 44px;
-  box-sizing: border-box;
-  margin-bottom: 10px;
-}
-#sendBtn {
-  background: #2de2e6;
-  color: #05161a;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-weight: bold;
-  cursor: pointer;
-}
-</style>
 </head>
-<body>
+<body style="background:#111111;color:#eeeeee;font-family:sans-serif;padding:20px;">
 
-<h1>MY AI</h1>
-<p class="sub">personal endpoint, runs on your own Cloudflare Worker</p>
+<h1>My AI</h1>
 
-<div class="setupRow">
-<label>Worker URL</label>
-<input type="text" id="workerUrl" placeholder="https://your-worker.workers.dev/">
-</div>
+<p>Worker URL:</p>
+<input type="text" id="workerUrl" style="width:100%;padding:8px;">
 
-<div class="setupRow">
-<label>API Key</label>
-<input type="password" id="apiKey" placeholder="your API key">
-</div>
+<p>API Key:</p>
+<input type="text" id="apiKey" style="width:100%;padding:8px;">
 
-<div id="log"></div>
+<p>Message:</p>
+<textarea id="promptBox" style="width:100%;padding:8px;height:60px;"></textarea>
 
-<textarea id="promptBox" placeholder="Type a message"></textarea>
-<br>
-<button id="sendBtn" onclick="sendMessage()">Send</button>
+<p><button id="sendBtn" onclick="sendMessage()">Send</button></p>
+
+<div id="output" style="white-space:pre-wrap;margin-top:20px;padding:10px;background:#222222;"></div>
 
 <script>
 var chatHistory = [];
 
-function addMessage(text, cssClass, label) {
-  var logDiv = document.getElementById("log");
-  var wrapper = document.createElement("div");
-  wrapper.className = cssClass;
-  var tagSpan = document.createElement("span");
-  tagSpan.className = "tag";
-  tagSpan.textContent = label;
-  wrapper.appendChild(tagSpan);
-  wrapper.appendChild(document.createTextNode(text));
-  logDiv.appendChild(wrapper);
-}
-
 function sendMessage() {
   var workerUrl = document.getElementById("workerUrl").value;
   var apiKey = document.getElementById("apiKey").value;
-  var promptBox = document.getElementById("promptBox");
-  var promptText = promptBox.value;
-  var sendBtn = document.getElementById("sendBtn");
+  var promptText = document.getElementById("promptBox").value;
+  var output = document.getElementById("output");
 
   if (promptText === "") {
     return;
   }
 
-  if (workerUrl === "" || apiKey === "") {
-    addMessage("Fill in your worker url and api key above first.", "msgErr", "setup needed");
-    return;
-  }
-
-  addMessage(promptText, "msgUser", "you");
-  promptBox.value = "";
-  sendBtn.disabled = true;
-  sendBtn.textContent = "...";
+  output.innerHTML = output.innerHTML + "\nYou: " + promptText;
 
   var headers = new Headers();
   headers.append("Authorization", "Bearer " + apiKey);
   headers.append("Content-Type", "application/json");
 
-  var payload = { prompt: promptText, history: chatHistory };
-  var bodyData = JSON.stringify(payload);
+  var bodyData = JSON.stringify({ prompt: promptText, history: chatHistory });
 
   fetch(workerUrl, { method: "POST", headers: headers, body: bodyData })
     .then(function(res) {
-      return res.json().then(function(data) {
-        return { ok: res.ok, status: res.status, data: data };
-      });
+      return res.json();
     })
-    .then(function(result) {
-      if (!result.ok) {
-        var errText = result.data.error || ("Request failed (" + result.status + ")");
-        addMessage(errText, "msgErr", "error");
-      } else {
-        addMessage(result.data.response, "msgAi", "ai");
+    .then(function(data) {
+      if (data.response) {
+        output.innerHTML = output.innerHTML + "\nAI: " + data.response;
         chatHistory.push({ role: "user", content: promptText });
-        chatHistory.push({ role: "assistant", content: result.data.response });
+        chatHistory.push({ role: "assistant", content: data.response });
+      } else {
+        output.innerHTML = output.innerHTML + "\nError: " + JSON.stringify(data);
       }
     })
     .catch(function(err) {
-      addMessage("Could not reach the worker: " + err.message, "msgErr", "error");
-    })
-    .then(function() {
-      sendBtn.disabled = false;
-      sendBtn.textContent = "Send";
+      output.innerHTML = output.innerHTML + "\nError: " + err.message;
     });
+
+  document.getElementById("promptBox").value = "";
 }
 </script>
 
